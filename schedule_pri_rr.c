@@ -3,14 +3,11 @@
  *
  * Priority round-robin scheduling
  */
-// TODO fix segv lol
-// first task is added to list, that might be all
-// remaining tasks are probably eaten by scope and
-// improper referencing.
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "task.h"
 #include "list.h"
@@ -89,9 +86,7 @@ void schedule()
 
             printf("Task %s finished.\n",current->name);        
 
-            printf("92\n");
             delete(&head, current);
-            printf("94\n");
         }
     }
 }
@@ -104,13 +99,24 @@ Task *pickNextTask()
     Task *nextTask = tmp->task;
     // find next task to be called
     if (tmp->next == NULL) {
+        // end of the list, start over
         tmp = head;
-    } else {
-        tmp = tmp->next;
+        return nextTask;
     }
-    // if next task is a lower priority, start over
-    if (tmp->task->priority < nextTask->priority) {
+
+    tmp = tmp->next;
+    
+    // if the next task is a lower priority, and    (a)
+    // it is not the head (it isn't the only        (b)
+    // ... task of that priority remianing) unless
+    // the head will not be finished running        (c)
+    // (a && (b || c))
+    if (tmp->task->priority < nextTask->priority &&
+        (strcmp(head->task->name, nextTask->name) ||
+        head->task->burst > QUANTUM)) 
+    {
         tmp = head;
     }
     return nextTask;
 }
+
